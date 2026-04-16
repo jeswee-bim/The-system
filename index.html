@@ -1,0 +1,1461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>THE SYSTEM</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
+<script src="https://accounts.google.com/gsi/client" async defer></script>
+<style>
+/* SYNC STATUS */
+.sync-btn{background:none;border:1px solid var(--bdr);border-radius:2px;padding:4px 8px;cursor:pointer;display:flex;align-items:center;gap:5px;font-family:'Orbitron',monospace;font-size:8px;letter-spacing:1px;color:var(--txm);transition:.2s}
+.sync-btn:hover{border-color:var(--cm);color:var(--c)}
+.sync-dot{width:6px;height:6px;border-radius:50%;background:#555;flex-shrink:0;transition:.3s}
+.sync-dot.ok{background:var(--grn)}.sync-dot.busy{background:var(--gold);animation:pulse 1s infinite}.sync-dot.err{background:var(--red)}
+@keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
+/* SYNC MODAL */
+.sync-section{margin-bottom:16px;padding-bottom:16px;border-bottom:1px solid var(--bdr)}
+.sync-section:last-child{border-bottom:none;margin-bottom:0;padding-bottom:0}
+.sync-lbl{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--txm);margin-bottom:8px}
+.sync-status-box{background:rgba(0,242,255,.04);border:1px solid var(--bdr);border-radius:2px;padding:10px 12px;font-size:12px;color:var(--txd);margin-bottom:10px}
+.gsi-btn{width:100%;padding:10px;background:#fff;border:none;border-radius:4px;font-size:13px;font-weight:500;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:8px;transition:.2s;color:#3c4043}
+.gsi-btn:hover{background:#f1f3f4;box-shadow:0 1px 3px rgba(0,0,0,.3)}
+.gsi-btn svg{width:18px;height:18px;flex-shrink:0}
+:root{
+  --c:#00f2ff;--cd:rgba(0,242,255,.14);--cm:rgba(0,242,255,.35);
+  --p:#7d2ae8;--pd:rgba(125,42,232,.14);--pm:rgba(125,42,232,.38);
+  --bg:#0d1117;--bdr:rgba(0,242,255,.18);--bdrbr:rgba(0,242,255,.5);
+  --tx:#dff1f6;--txd:rgba(223,241,246,.55);--txm:rgba(223,241,246,.28);
+  --gold:#ffc83d;--red:#ff4757;--grn:#2ecc71;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;background:var(--bg);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:15px;overflow-x:hidden}
+body::before{content:'';position:fixed;inset:0;background:radial-gradient(ellipse 70% 35% at 50% -5%,rgba(0,242,255,.05),transparent 65%),radial-gradient(ellipse 45% 25% at 90% 90%,rgba(125,42,232,.07),transparent 60%);pointer-events:none;z-index:0}
+#app{position:relative;z-index:1;max-width:430px;margin:0 auto;min-height:100vh}
+.nav{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:100%;max-width:430px;background:rgba(8,11,17,.96);border-top:1px solid var(--bdr);display:flex;z-index:200;backdrop-filter:blur(16px)}
+.nbtn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;padding:8px 2px 11px;gap:3px;cursor:pointer;font-family:'Orbitron',monospace;font-size:7px;letter-spacing:.8px;color:var(--txm);transition:.2s;border:none;background:none;text-transform:uppercase}
+.nbtn.active{color:var(--c)}
+.nbtn svg{width:18px;height:18px;stroke-width:1.6;fill:none;stroke:currentColor}
+.nbtn.active svg{stroke:var(--c)}
+.hdr{background:linear-gradient(180deg,rgba(0,242,255,.07) 0%,transparent 100%);border-bottom:1px solid var(--bdr);padding:18px 16px 14px;position:sticky;top:0;z-index:100;backdrop-filter:blur(18px)}
+.hdr-r1{display:flex;justify-content:space-between;align-items:center;margin-bottom:11px}
+.sys-tag{font-family:'Orbitron',monospace;font-size:9px;letter-spacing:3.5px;color:var(--c);opacity:.7}
+.pc-row{display:flex;align-items:center;gap:12px}
+.avatar{width:46px;height:46px;background:var(--pd);border:1.5px solid var(--p);border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Orbitron',monospace;font-size:16px;font-weight:700;color:var(--p);flex-shrink:0;cursor:pointer}
+.pc-info{flex:1;min-width:0}
+.pc-name-row{display:flex;align-items:center;gap:8px;cursor:pointer;margin-bottom:5px}
+.pc-name{font-family:'Orbitron',monospace;font-size:14px;font-weight:700}
+.cls-tag{font-size:8px;padding:2px 7px;border-radius:1px;font-family:'Orbitron',monospace;letter-spacing:1px;white-space:nowrap}
+.cls-strength{color:#ff6b35;background:rgba(255,107,53,.1);border:1px solid rgba(255,107,53,.3)}
+.cls-athlete{color:var(--c);background:var(--cd);border:1px solid var(--bdr)}
+.cls-builder{color:#a855f7;background:rgba(168,85,247,.1);border:1px solid rgba(168,85,247,.3)}
+.xp-row{display:flex;align-items:center;gap:7px}
+.lv-txt{font-size:11px;color:var(--c);font-family:'Orbitron',monospace;white-space:nowrap}
+.xp-bar{flex:1;height:4px;background:rgba(0,242,255,.1);border-radius:2px;overflow:hidden}
+.xp-fill{height:100%;background:linear-gradient(90deg,var(--c),rgba(0,242,255,.5));border-radius:2px;transition:width .8s}
+.xp-lbl{font-size:9px;color:var(--txm);white-space:nowrap}
+.page{display:none;padding:14px 14px 90px}
+.page.active{display:block}
+.panel{background:rgba(9,13,20,.75);border:1px solid var(--bdr);border-radius:3px;padding:14px;margin-bottom:11px;position:relative;overflow:hidden}
+.panel::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cm),transparent)}
+.ptitle{font-family:'Orbitron',monospace;font-size:8.5px;letter-spacing:3px;color:var(--c);text-transform:uppercase;margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.ptitle::after{content:'';flex:1;height:1px;background:var(--bdr)}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat-pill{background:rgba(0,242,255,.04);border:1px solid rgba(0,242,255,.1);border-radius:2px;padding:10px 8px;text-align:center}
+.sp-v{font-family:'Orbitron',monospace;font-size:20px;font-weight:700;line-height:1.1}
+.sp-l{font-size:9px;color:var(--txd);letter-spacing:.5px;margin-top:2px}
+.sp-v.str{color:#ff6b35}.sp-v.vit{color:var(--c)}.sp-v.agi{color:#2ecc71}.sp-v.int{color:#a855f7}
+.week-grid{display:flex;gap:5px;justify-content:center;margin-bottom:12px}
+.wd{width:36px;height:36px;border-radius:2px;border:1px solid rgba(0,242,255,.1);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:1px;font-size:9px;color:var(--txm);font-family:'Orbitron',monospace}
+.wd.done{background:var(--cd);border-color:var(--c);color:var(--c)}
+.wd.today{border-color:var(--c)}
+.wd .dd{font-size:6.5px;opacity:.7}
+.muscle-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}
+.mgi{display:flex;align-items:center;gap:9px;padding:10px 12px;background:rgba(0,242,255,.03);border:1px solid rgba(0,242,255,.09);border-radius:2px;cursor:pointer;transition:.2s}
+.mgi:hover{border-color:var(--cm);background:var(--cd)}
+.mg-emoji{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.mg-info{flex:1;min-width:0}
+.mg-name{font-size:12px;font-weight:600;color:var(--tx);margin-bottom:1px}
+.mg-rnk{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.8px}
+.mg-bar{height:2px;background:rgba(255,255,255,.06);border-radius:1px;overflow:hidden;margin-top:4px}
+.mg-fill{height:100%;border-radius:1px;transition:width .8s}
+.rk0{color:#555}.rk1{color:#cd7f32}.rk2{color:#a8a9ad}.rk3{color:#ffd700}.rk4{color:#00cfff}.rk5{color:#b04aff}.rk6{color:#ff6b35}
+.rf0{background:#555}.rf1{background:#cd7f32}.rf2{background:#a8a9ad}.rf3{background:#ffd700}.rf4{background:#00cfff}.rf5{background:#b04aff}.rf6{background:#ff6b35}
+.btn{background:var(--cd);border:1px solid var(--cm);color:var(--c);font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1px;padding:9px 14px;cursor:pointer;border-radius:2px;text-transform:uppercase;transition:.2s;white-space:nowrap}
+.btn:hover{background:rgba(0,242,255,.25)}.btn:active{transform:scale(.97)}
+.btn.pr{color:var(--p);border-color:var(--pm);background:var(--pd)}
+.btn.rd{color:var(--red);border-color:rgba(255,71,87,.35);background:rgba(255,71,87,.08)}
+.btn.gd{color:var(--gold);border-color:rgba(255,200,61,.35);background:rgba(255,200,61,.08)}
+.btn.gn{color:var(--grn);border-color:rgba(46,204,113,.35);background:rgba(46,204,113,.08)}
+.btn.fw{width:100%;text-align:center;display:block}
+.brow{display:flex;gap:8px;margin-top:10px;flex-wrap:wrap}
+.inp{flex:1;background:rgba(0,242,255,.05);border:1px solid var(--bdr);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:13px;padding:9px 12px;outline:none;border-radius:1px;transition:.2s}
+.inp:focus{border-color:var(--cm)}.inp::placeholder{color:var(--txm)}
+select.inp{cursor:pointer;background:rgba(0,242,255,.05)}
+select.inp option{background:#0d1117;color:var(--tx)}
+.wh-box{background:rgba(0,242,255,.05);border:1px solid var(--bdr);border-radius:3px;padding:14px;margin-bottom:11px;display:flex;align-items:center;justify-content:space-between}
+.wh-timer{font-family:'Orbitron',monospace;font-size:22px;font-weight:900;color:var(--c)}
+.si{display:grid;grid-template-columns:26px 1fr 1fr 34px 48px;gap:6px;align-items:center;margin-bottom:6px}
+.si-n{font-family:'Orbitron',monospace;font-size:9px;color:var(--txm);text-align:center}
+.si-inp{background:rgba(0,242,255,.06);border:1px solid var(--bdr);color:var(--tx);font-family:'Rajdhani',sans-serif;font-size:14px;font-weight:600;padding:7px 6px;text-align:center;outline:none;border-radius:1px;transition:.2s;width:100%}
+.si-inp:focus{border-color:var(--cm)}
+.si-inp:disabled{opacity:.5;cursor:default}
+.si-done{width:32px;height:32px;border-radius:50%;border:1.5px solid var(--bdr);background:none;color:var(--txm);cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.si-done.ok{background:var(--cm);border-color:var(--c);color:#fff}
+.si-xp{font-size:9px;color:var(--gold);font-family:'Orbitron',monospace;text-align:center}
+.chart-wrap{display:flex;align-items:flex-end;gap:3px;height:64px}
+.cb{flex:1;border-radius:1px 1px 0 0;min-height:4px;position:relative}
+.cb span{position:absolute;bottom:-16px;left:50%;transform:translateX(-50%);font-size:7px;color:var(--txm);white-space:nowrap;font-family:'Orbitron',monospace}
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.82);z-index:500;align-items:center;justify-content:center;padding:16px}
+.modal-bg.show{display:flex;animation:fi .25s ease}
+.modal{background:#090f18;border:1px solid var(--bdr);border-radius:3px;width:100%;max-width:390px;padding:20px;position:relative;max-height:88vh;overflow-y:auto}
+.modal::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cm),transparent)}
+.mttl{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;letter-spacing:2px;color:var(--c);margin-bottom:16px}
+.ep-list{max-height:300px;overflow-y:auto}
+.ep-item{padding:11px 14px;border-bottom:1px solid rgba(0,242,255,.07);cursor:pointer;transition:.15s;display:flex;align-items:center;gap:10px}
+.ep-item:hover{background:var(--cd)}.ep-item:last-child{border-bottom:none}
+.ep-name{font-size:13px;font-weight:600}.ep-meta{font-size:10px;color:var(--txd);margin-top:1px}
+.ht{width:100%;font-size:12px;border-collapse:collapse}
+.ht th{font-family:'Orbitron',monospace;font-size:7.5px;letter-spacing:1.5px;color:var(--txm);text-align:left;padding:6px 0;border-bottom:1px solid var(--bdr)}
+.ht td{padding:8px 0;border-bottom:1px solid rgba(0,242,255,.05);color:var(--txd)}
+.ht td.hl{color:var(--tx);font-weight:600}.ht td.pr{color:var(--gold)}
+.toasts{position:fixed;top:16px;left:50%;transform:translateX(-50%);z-index:999;display:flex;flex-direction:column;gap:7px;width:90%;max-width:380px;pointer-events:none}
+.toast{background:rgba(5,12,22,.97);border:1px solid var(--cm);padding:11px 16px;font-family:'Orbitron',monospace;font-size:10px;letter-spacing:1px;color:var(--c);text-align:center;border-radius:2px;animation:ti .3s ease,to .4s ease 2.6s forwards}
+.toast.lv{border-color:var(--gold);color:var(--gold);font-size:12px}
+.lvlup{display:none;position:fixed;inset:0;background:rgba(0,0,0,.9);z-index:600;flex-direction:column;align-items:center;justify-content:center}
+.lvlup.show{display:flex;animation:fi .4s ease}
+.lvlup-box{text-align:center;padding:40px 36px;border:1px solid var(--c);background:rgba(0,14,22,.97);max-width:300px;width:90%;position:relative}
+.lvlup-box::before{content:'';position:absolute;inset:0;background:radial-gradient(ellipse at center,rgba(0,242,255,.07) 0%,transparent 70%)}
+.lvu-tag{font-family:'Orbitron',monospace;font-size:10px;letter-spacing:4px;color:var(--c);margin-bottom:10px}
+.lvu-n{font-family:'Orbitron',monospace;font-size:72px;font-weight:900;color:var(--tx);line-height:1;margin-bottom:6px}
+.lvu-sub{font-size:13px;color:var(--txd);margin-bottom:22px}
+.pr-flash{display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:700;text-align:center;pointer-events:none}
+.pr-flash.show{display:block;animation:prIn .7s ease forwards}
+.pr-text{font-family:'Orbitron',monospace;font-size:28px;font-weight:900;color:var(--gold);letter-spacing:4px}
+.pr-sub{font-size:12px;color:var(--txd);margin-top:4px;font-family:'Orbitron',monospace;letter-spacing:2px}
+.empty{text-align:center;padding:24px 16px;color:var(--txm);font-size:13px;line-height:1.6}
+/* CALENDAR */
+.cal-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:3px}
+.cal-day-hdr{font-family:'Orbitron',monospace;font-size:7.5px;letter-spacing:.5px;color:var(--txm);text-align:center;padding:4px 0}
+.cal-day{min-height:44px;border-radius:2px;border:1px solid rgba(0,242,255,.07);padding:4px;cursor:pointer;transition:.15s;position:relative}
+.cal-day:hover{border-color:var(--cm);background:var(--cd)}
+.cal-day.today{border-color:var(--c)}
+.cal-day.has-wo{background:rgba(0,242,255,.05)}
+.cal-day.empty-day{opacity:.2;pointer-events:none}
+.cal-day-n{font-size:10px;color:var(--txd);font-family:'Orbitron',monospace;margin-bottom:3px}
+.cal-day.today .cal-day-n{color:var(--c)}
+.cal-dots{display:flex;flex-wrap:wrap;gap:2px;margin-top:2px}
+.cal-dot{width:5px;height:5px;border-radius:50%}
+.cal-nav{display:flex;align-items:center;justify-content:space-between;margin-bottom:12px}
+.cal-nav-btn{background:none;border:1px solid var(--bdr);color:var(--txd);font-size:16px;width:28px;height:28px;border-radius:2px;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:.2s}
+.cal-nav-btn:hover{border-color:var(--cm);color:var(--c)}
+.cal-month{font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--tx);letter-spacing:2px}
+.cal-detail{background:rgba(0,242,255,.04);border:1px solid var(--bdr);border-radius:2px;padding:12px;margin-top:10px;display:none}
+.cal-detail.show{display:block}
+/* MUSCLE ACCORDION */
+.muscle-list{display:flex;flex-direction:column;gap:6px}
+.ml-item{border:1px solid rgba(0,242,255,.09);border-radius:3px;overflow:hidden;transition:.2s}
+.ml-item.open{border-color:var(--cm)}
+.ml-header{display:flex;align-items:center;gap:10px;padding:11px 12px;cursor:pointer;transition:.15s;background:rgba(0,242,255,.03)}
+.ml-header:hover{background:var(--cd)}
+.ml-emoji{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0}
+.ml-info{flex:1;min-width:0}
+.ml-name{font-size:13px;font-weight:600;margin-bottom:1px}
+.ml-rnk{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.8px}
+.ml-prog{height:2px;background:rgba(255,255,255,.06);border-radius:1px;overflow:hidden;margin-top:4px}
+.ml-progf{height:100%;border-radius:1px;transition:width .8s}
+.ml-arrow{font-size:10px;color:var(--txm);transition:transform .25s;flex-shrink:0}
+.ml-item.open .ml-arrow{transform:rotate(180deg)}
+.ml-body{display:none;padding:0 12px 12px;background:rgba(0,242,255,.02)}
+.ml-item.open .ml-body{display:block}
+.ml-ex-row{display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid rgba(0,242,255,.06)}
+.ml-ex-row:last-child{border-bottom:none}
+.ml-ex-name{font-size:13px;font-weight:600;color:var(--tx)}
+.ml-ex-sub{font-size:10px;color:var(--txd);margin-top:1px}
+.ml-pr{text-align:right}
+.ml-pr-val{font-family:'Orbitron',monospace;font-size:12px;color:var(--gold);font-weight:700}
+.ml-pr-date{font-size:9px;color:var(--txm);margin-top:1px}
+.ml-no-ex{font-size:12px;color:var(--txm);padding:10px 0;text-align:center}
+/* NOTES */
+.note-card{background:rgba(9,13,20,.75);border:1px solid var(--bdr);border-radius:3px;padding:14px;margin-bottom:10px;cursor:pointer;transition:.2s;position:relative;overflow:hidden}
+.note-card::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cm),transparent)}
+.note-card:hover{border-color:var(--cm)}
+.note-card.pinned{border-color:rgba(255,200,61,.35);background:rgba(255,200,61,.04)}
+.note-card.pinned::before{background:linear-gradient(90deg,transparent,rgba(255,200,61,.5),transparent)}
+.note-hdr{display:flex;align-items:flex-start;justify-content:space-between;gap:10px;margin-bottom:6px}
+.note-title{font-family:'Orbitron',monospace;font-size:12px;font-weight:700;color:var(--tx);flex:1;min-width:0;word-break:break-word}
+.note-pin{font-size:13px;flex-shrink:0;opacity:.5}
+.note-card.pinned .note-pin{opacity:1}
+.note-body{font-size:13px;color:var(--txd);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.note-body.collapsed{display:-webkit-box;-webkit-line-clamp:3;-webkit-box-orient:vertical;overflow:hidden}
+.note-footer{display:flex;align-items:center;justify-content:space-between;margin-top:10px}
+.note-tag{font-family:'Orbitron',monospace;font-size:7.5px;letter-spacing:1px;padding:2px 7px;border-radius:1px}
+.note-date{font-size:10px;color:var(--txm)}
+.note-actions{display:flex;gap:6px;margin-top:10px;display:none}
+.note-card.expanded .note-actions{display:flex}
+.note-card.expanded .note-body{display:block}
+.note-search-bar{display:flex;gap:8px;margin-bottom:10px}
+.tag-filters{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.tf-btn{font-family:'Orbitron',monospace;font-size:8px;letter-spacing:.8px;padding:4px 10px;border-radius:1px;border:1px solid var(--bdr);background:none;color:var(--txm);cursor:pointer;transition:.2s;text-transform:uppercase}
+.tf-btn:hover,.tf-btn.active{border-color:var(--cm);color:var(--c);background:var(--cd)}
+/* note compose */
+.note-compose{background:rgba(9,13,20,.85);border:1px solid var(--bdr);border-radius:3px;padding:14px;margin-bottom:12px;position:relative;overflow:hidden}
+.note-compose::before{content:'';position:absolute;top:0;left:0;right:0;height:1px;background:linear-gradient(90deg,transparent,var(--cm),transparent)}
+textarea.inp{resize:vertical;min-height:90px;font-size:13px;line-height:1.6}
+.note-tags-row{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0}
+/* CUSTOM EX FORM */
+.cex-form{border-top:1px solid var(--bdr);margin-top:10px;padding-top:12px;display:none}
+.cex-form.show{display:block}
+@keyframes fi{from{opacity:0}to{opacity:1}}
+@keyframes ti{from{opacity:0;transform:translateY(-8px)}to{opacity:1;transform:translateY(0)}}
+@keyframes to{from{opacity:1}to{opacity:0;transform:translateY(-8px)}}
+@keyframes prIn{0%{opacity:0;transform:translate(-50%,-50%) scale(.4)}40%{opacity:1;transform:translate(-50%,-50%) scale(1.1)}70%{transform:translate(-50%,-50%) scale(.95)}80%{opacity:1}100%{opacity:0;transform:translate(-50%,-50%) scale(1)}}
+::-webkit-scrollbar{width:3px}::-webkit-scrollbar-track{background:transparent}::-webkit-scrollbar-thumb{background:var(--bdr);border-radius:2px}
+</style>
+</head>
+<body>
+<div id="app">
+
+<div class="hdr">
+  <div class="hdr-r1">
+    <div class="sys-tag">The System</div>
+    <div style="display:flex;align-items:center;gap:8px">
+      <div style="font-size:11px;color:var(--txd)" id="hDate"></div>
+      <button class="sync-btn" onclick="openSyncModal()" id="syncBtn">
+        <div class="sync-dot" id="syncDot"></div>
+        <span id="syncLbl">Sync</span>
+      </button>
+    </div>
+  </div>
+  <div class="pc-row">
+    <div class="avatar" id="av" onclick="openClassModal()">?</div>
+    <div class="pc-info">
+      <div class="pc-name-row" onclick="promptName()">
+        <span class="pc-name" id="pcN">HUNTER</span>
+        <span class="cls-tag cls-athlete" id="clsTag">ATHLETE</span>
+      </div>
+      <div class="xp-row">
+        <div class="lv-txt" id="lvTxt">LV.1</div>
+        <div class="xp-bar"><div class="xp-fill" id="xpF" style="width:0%"></div></div>
+        <div class="xp-lbl" id="xpL">0/100</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- HOME -->
+<div class="page active" id="pg-home">
+  <div class="panel">
+    <div class="ptitle">This Week</div>
+    <div class="week-grid" id="wkGrid"></div>
+    <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px">
+      <div style="text-align:center"><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--c)" id="hStreak">0</div><div style="font-size:10px;color:var(--txd);margin-top:2px">Streak</div></div>
+      <div style="text-align:center"><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--gold)" id="hXP">0</div><div style="font-size:10px;color:var(--txd);margin-top:2px">Week XP</div></div>
+      <div style="text-align:center"><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#2ecc71" id="hVol">0</div><div style="font-size:10px;color:var(--txd);margin-top:2px">kg Vol</div></div>
+      <div style="text-align:center"><div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:#ff6b35" id="hPR">0</div><div style="font-size:10px;color:var(--txd);margin-top:2px">PRs</div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Player Stats</div>
+    <div class="stat-row" id="statRow"></div>
+    <div style="text-align:center;font-size:11px;color:var(--txd)">Total Volume: <span style="color:var(--c);font-family:'Orbitron',monospace" id="totVol">0 kg</span></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Muscle Rankings</div>
+    <div id="homeMusc"></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Quick Start</div>
+    <button class="btn fw" style="padding:14px;font-size:10px" onclick="startWorkout()">⚔ Begin Workout Session</button>
+  </div>
+</div>
+
+<!-- WORKOUT -->
+<div class="page" id="pg-workout">
+  <div id="wo-idle">
+    <div class="panel">
+      <div class="ptitle">New Session</div>
+      <button class="btn fw" style="padding:14px;font-size:10px" onclick="startWorkout()">⚔ Begin Session</button>
+    </div>
+    <div class="panel">
+      <div class="ptitle">Recent Sessions</div>
+      <div id="recentWo"></div>
+    </div>
+  </div>
+  <div id="wo-active" style="display:none">
+    <div class="wh-box">
+      <div>
+        <div style="font-family:'Orbitron',monospace;font-size:11px;font-weight:700;color:var(--tx);letter-spacing:1px">SESSION ACTIVE</div>
+        <div style="font-size:11px;color:var(--txd);margin-top:3px">Vol: <span id="woV" style="color:var(--c)">0 kg</span> &nbsp;Sets: <span id="woS" style="color:var(--c)">0</span></div>
+      </div>
+      <div style="text-align:right">
+        <div class="wh-timer" id="woT">00:00</div>
+        <button class="btn rd" style="font-size:8px;padding:5px 10px;margin-top:5px" onclick="endWorkout()">Finish</button>
+      </div>
+    </div>
+    <div id="woEx"></div>
+    <div class="brow"><button class="btn pr fw" onclick="openExPicker()">+ Add Exercise</button></div>
+  </div>
+</div>
+
+<!-- MUSCLES -->
+<div class="page" id="pg-muscles">
+  <div class="panel">
+    <div class="ptitle">Muscle Rankings</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px" id="rkLeg"></div>
+    <div class="muscle-list" id="muscleList"></div>
+  </div>
+</div>
+
+<!-- PROGRESS -->
+<div class="page" id="pg-progress">
+  <div class="panel">
+    <div class="ptitle">Training Calendar</div>
+    <div class="cal-nav">
+      <button class="cal-nav-btn" onclick="calPrev()">&#8249;</button>
+      <div class="cal-month" id="calMonth"></div>
+      <button class="cal-nav-btn" onclick="calNext()">&#8250;</button>
+    </div>
+    <div class="cal-grid" id="calHdrs"></div>
+    <div style="height:6px"></div>
+    <div class="cal-grid" id="calGrid"></div>
+    <div class="cal-detail" id="calDetail"></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Volume — Last 7 Workouts</div>
+    <div class="chart-wrap" id="volChart"></div>
+    <div style="height:20px"></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Personal Records</div>
+    <div id="prTbl"></div>
+  </div>
+  <div class="panel">
+    <div class="ptitle">Achievements</div>
+    <div id="achGrid" style="display:grid;grid-template-columns:1fr 1fr;gap:8px"></div>
+  </div>
+</div>
+
+<!-- NOTES -->
+<div class="page" id="pg-notes">
+  <!-- Compose panel -->
+  <div class="note-compose" id="noteCompose">
+    <div class="ptitle">New Note</div>
+    <input class="inp" id="noteTitle" placeholder="Title (optional)..." style="margin-bottom:8px;width:100%">
+    <textarea class="inp" id="noteBody" placeholder="Write anything — workout plans, form cues, goals, nutrition notes..."></textarea>
+    <div class="note-tags-row" id="noteTagPicker"></div>
+    <div style="display:flex;gap:8px;margin-top:8px">
+      <button class="btn gn fw" onclick="saveNote()">Save Note</button>
+      <button class="btn rd" onclick="clearCompose()">Clear</button>
+    </div>
+  </div>
+
+  <!-- Search + filter -->
+  <div class="note-search-bar">
+    <input class="inp" id="noteSearch" placeholder="Search notes..." oninput="renderNotes()">
+  </div>
+  <div class="tag-filters" id="tagFilters"></div>
+
+  <!-- Notes list -->
+  <div id="notesList"></div>
+</div>
+
+<nav class="nav">
+  <button class="nbtn active" onclick="setPage('home',this)"><svg viewBox="0 0 24 24"><path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/><polyline points="9 22 9 12 15 12 15 22"/></svg><span>Home</span></button>
+  <button class="nbtn" onclick="setPage('workout',this)"><svg viewBox="0 0 24 24"><path d="M6 5v14M18 5v14M3 8h3M18 8h3M3 16h3M18 16h3M6 12h12"/></svg><span>Workout</span></button>
+  <button class="nbtn" onclick="setPage('muscles',this)"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="4"/><path d="M6 20v-2a6 6 0 0112 0v2"/></svg><span>Muscles</span></button>
+  <button class="nbtn" onclick="setPage('progress',this)"><svg viewBox="0 0 24 24"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg><span>Progress</span></button>
+  <button class="nbtn" onclick="setPage('notes',this)"><svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><polyline points="14 2 14 8 20 8"/><line x1="16" y1="13" x2="8" y2="13"/><line x1="16" y1="17" x2="8" y2="17"/><polyline points="10 9 9 9 8 9"/></svg><span>Notes</span></button>
+</nav>
+</div>
+
+<!-- EX PICKER -->
+<div class="modal-bg" id="exModal">
+  <div class="modal">
+    <div class="mttl">Add Exercise</div>
+    <div style="display:flex;gap:8px;margin-bottom:10px;flex-wrap:wrap">
+      <input class="inp" id="exSrch" placeholder="Search..." oninput="filterEx()">
+      <select class="inp" id="exMF" style="width:120px;flex:none" onchange="filterEx()"><option value="">All Muscles</option></select>
+    </div>
+    <div class="ep-list" id="epList"></div>
+    <div style="margin-top:10px">
+      <button class="btn" style="font-size:8px;padding:6px 12px;width:100%" onclick="toggleCexForm()">+ Create Custom Exercise</button>
+      <div class="cex-form" id="cexForm">
+        <div style="display:flex;flex-direction:column;gap:8px;margin-top:10px">
+          <input class="inp" id="cexName" placeholder="Exercise name (e.g. Seated Row)">
+          <div style="display:flex;gap:8px">
+            <select class="inp" id="cexMuscle"><option value="">Muscle group...</option></select>
+            <select class="inp" id="cexType">
+              <option value="Strength">Strength</option>
+              <option value="Hypertrophy">Hypertrophy</option>
+              <option value="Bodyweight">Bodyweight</option>
+              <option value="Cardio">Cardio</option>
+            </select>
+          </div>
+          <button class="btn gn" style="width:100%" onclick="saveCustomEx()">Save & Add to Workout</button>
+        </div>
+      </div>
+    </div>
+    <div class="brow"><button class="btn rd" onclick="closeModal('exModal')">Cancel</button></div>
+  </div>
+</div>
+
+<!-- CLASS -->
+<div class="modal-bg" id="classModal">
+  <div class="modal">
+    <div class="mttl">Choose Class</div>
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:14px">
+      <div class="ep-item" onclick="setClass('strength')" style="border:1px solid rgba(255,107,53,.25);border-radius:2px">
+        <div style="font-size:22px">⚔</div>
+        <div><div class="ep-name" style="color:#ff6b35">Strength Seeker</div><div class="ep-meta">+10% STR XP · Compound lifts & PR focus</div></div>
+      </div>
+      <div class="ep-item" onclick="setClass('athlete')" style="border:1px solid var(--cm);border-radius:2px">
+        <div style="font-size:22px">🏃</div>
+        <div><div class="ep-name" style="color:var(--c)">Athlete Elite</div><div class="ep-meta">+10% AGI XP · Balanced & endurance</div></div>
+      </div>
+      <div class="ep-item" onclick="setClass('builder')" style="border:1px solid rgba(168,85,247,.25);border-radius:2px">
+        <div style="font-size:22px">🏋</div>
+        <div><div class="ep-name" style="color:#a855f7">Mass Builder</div><div class="ep-meta">+10% VIT XP · High volume hypertrophy</div></div>
+      </div>
+    </div>
+    <button class="btn rd" onclick="closeModal('classModal')">Cancel</button>
+  </div>
+</div>
+
+<!-- SUMMARY -->
+<div class="modal-bg" id="sumModal">
+  <div class="modal">
+    <div class="mttl">Workout Complete</div>
+    <div id="sumContent"></div>
+    <button class="btn gn fw" style="margin-top:14px" onclick="closeModal('sumModal')">Continue</button>
+  </div>
+</div>
+
+<!-- NAME CHANGE MODAL -->
+<div class="modal-bg" id="nameModal">
+  <div class="modal" style="max-width:320px">
+    <div class="mttl">Change Name</div>
+    <div style="margin-bottom:14px">
+      <div style="font-size:11px;color:var(--txd);margin-bottom:8px;letter-spacing:.5px">Hunter name (max 12 characters)</div>
+      <input class="inp" id="nameInput" maxlength="12" placeholder="Enter your hunter name..."
+        style="width:100%;font-family:'Orbitron',monospace;font-size:14px;font-weight:700;letter-spacing:1px;text-transform:uppercase"
+        oninput="this.value=this.value.toUpperCase()"
+        onkeydown="if(event.key==='Enter')saveName()">
+      <div style="font-size:10px;color:var(--txm);margin-top:6px;text-align:right">
+        <span id="nameCharCount">0</span>/12
+      </div>
+    </div>
+    <div style="display:flex;gap:8px">
+      <button class="btn gn fw" onclick="saveName()">Confirm</button>
+      <button class="btn rd fw" onclick="closeModal('nameModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- SYNC MODAL -->
+<div class="modal-bg" id="syncModal">
+  <div class="modal">
+    <div class="mttl">Cloud Sync</div>
+
+    <!-- GOOGLE DRIVE -->
+    <div class="sync-section">
+      <div class="sync-lbl">Google Drive</div>
+      <div class="sync-status-box" id="driveStatusBox">Not connected. Sign in to sync across devices.</div>
+      <div id="driveSignedOut">
+        <button class="gsi-btn" onclick="driveSignIn()">
+          <svg viewBox="0 0 48 48"><path fill="#EA4335" d="M24 9.5c3.54 0 6.71 1.22 9.21 3.6l6.85-6.85C35.9 2.38 30.47 0 24 0 14.62 0 6.51 5.38 2.56 13.22l7.98 6.19C12.43 13.72 17.74 9.5 24 9.5z"/><path fill="#4285F4" d="M46.98 24.55c0-1.57-.15-3.09-.38-4.55H24v9.02h12.94c-.58 2.96-2.26 5.48-4.78 7.18l7.73 6c4.51-4.18 7.09-10.36 7.09-17.65z"/><path fill="#FBBC05" d="M10.53 28.59c-.48-1.45-.76-2.99-.76-4.59s.27-3.14.76-4.59l-7.98-6.19C.92 16.46 0 20.12 0 24c0 3.88.92 7.54 2.56 10.78l7.97-6.19z"/><path fill="#34A853" d="M24 48c6.48 0 11.93-2.13 15.89-5.81l-7.73-6c-2.18 1.48-4.97 2.31-8.16 2.31-6.26 0-11.57-4.22-13.47-9.91l-7.98 6.19C6.51 42.62 14.62 48 24 48z"/></svg>
+          Sign in with Google
+        </button>
+      </div>
+      <div id="driveSignedIn" style="display:none">
+        <div style="display:flex;gap:8px;flex-wrap:wrap">
+          <button class="btn gn" onclick="drivePush(true)" style="flex:1">↑ Push to Drive</button>
+          <button class="btn" onclick="drivePull(true)" style="flex:1">↓ Pull from Drive</button>
+          <button class="btn rd" onclick="driveSignOut()" style="flex:1">Sign Out</button>
+        </div>
+        <div style="font-size:10px;color:var(--txm);margin-top:8px;text-align:center" id="lastSyncedTxt"></div>
+      </div>
+    </div>
+
+    <!-- SETUP GUIDE -->
+    <div class="sync-section" id="setupGuide">
+      <div class="sync-lbl">One-Time Setup Required</div>
+      <div style="font-size:12px;color:var(--txd);line-height:1.6;margin-bottom:10px">
+        To use Google Drive sync this app must be hosted online (not opened as a local file) and needs a Google OAuth Client ID.
+      </div>
+      <div style="background:rgba(0,242,255,.04);border:1px solid var(--bdr);border-radius:2px;padding:12px;font-size:11px;color:var(--txd);line-height:1.8;margin-bottom:10px">
+        <b style="color:var(--c)">Step 1:</b> Go to <span style="color:var(--c)">console.cloud.google.com</span><br>
+        <b style="color:var(--c)">Step 2:</b> Create a project → Enable Drive API<br>
+        <b style="color:var(--c)">Step 3:</b> APIs &amp; Services → Credentials → Create OAuth 2.0 Client ID<br>
+        <b style="color:var(--c)">Step 4:</b> Application type: Web · Add your site URL to Authorised Origins<br>
+        <b style="color:var(--c)">Step 5:</b> Copy your Client ID and paste it below
+      </div>
+      <div style="display:flex;gap:8px">
+        <input class="inp" id="clientIdInput" placeholder="Paste your OAuth Client ID here...">
+        <button class="btn gn" onclick="saveClientId()" style="white-space:nowrap">Save</button>
+      </div>
+      <div style="font-size:10px;color:var(--txm);margin-top:6px">Stored locally. Never sent to any server except Google's own OAuth service.</div>
+    </div>
+
+    <!-- JSON BACKUP -->
+    <div class="sync-section">
+      <div class="sync-lbl">Manual Backup (always works)</div>
+      <div style="display:flex;gap:8px">
+        <button class="btn fw" onclick="exportJSON()">↓ Export JSON</button>
+        <button class="btn fw" onclick="document.getElementById('importFile').click()">↑ Import JSON</button>
+      </div>
+      <input type="file" id="importFile" accept=".json" style="display:none" onchange="importJSON(event)">
+      <div style="font-size:10px;color:var(--txm);margin-top:6px;text-align:center">Export saves a file to your device. Import loads it back — works across any device.</div>
+    </div>
+
+    <button class="btn rd fw" style="margin-top:4px" onclick="closeModal('syncModal')">Close</button>
+  </div>
+</div>
+
+<div class="toasts" id="toasts"></div>
+<div class="lvlup" id="lvlup">
+  <div class="lvlup-box">
+    <div class="lvu-tag">LEVEL UP</div>
+    <div class="lvu-n" id="lvlN">2</div>
+    <div class="lvu-sub" id="lvlSub">You have grown stronger</div>
+    <button class="btn" onclick="document.getElementById('lvlup').classList.remove('show')">Continue</button>
+  </div>
+</div>
+<div class="pr-flash" id="prf"><div class="pr-text">NEW PR!</div><div class="pr-sub" id="prSub"></div></div>
+
+<script>
+const MUSCLES=[
+  {id:'chest',n:'Chest',e:'💪',c:'#ff6b35'},
+  {id:'back',n:'Back',e:'🦾',c:'#00cfff'},
+  {id:'shoulders',n:'Shoulders',e:'⚡',c:'#a855f7'},
+  {id:'biceps',n:'Biceps',e:'💥',c:'#ff4757'},
+  {id:'triceps',n:'Triceps',e:'🔱',c:'#ffa502'},
+  {id:'legs',n:'Legs',e:'🦵',c:'#2ecc71'},
+  {id:'glutes',n:'Glutes',e:'🔥',c:'#ff6b35'},
+  {id:'core',n:'Core',e:'⚙',c:'#ffc83d'},
+  {id:'calves',n:'Calves',e:'⚡',c:'#1e90ff'},
+  {id:'forearms',n:'Forearms',e:'🏹',c:'#a29bfe'},
+];
+const RNKS=['Untrained','Bronze','Silver','Gold','Platinum','Diamond','Mythic'];
+const RVOL=[0,500,2000,6000,15000,35000,80000];
+const EXLIST=[
+  {id:'bench',n:'Barbell Bench Press',m:'chest',t:'Strength'},
+  {id:'incline',n:'Incline DB Press',m:'chest',t:'Hypertrophy'},
+  {id:'cable_fly',n:'Cable Fly',m:'chest',t:'Hypertrophy'},
+  {id:'pushup',n:'Push-Ups',m:'chest',t:'Bodyweight'},
+  {id:'deadlift',n:'Deadlift',m:'back',t:'Strength'},
+  {id:'pullup',n:'Pull-Ups',m:'back',t:'Bodyweight'},
+  {id:'row',n:'Barbell Row',m:'back',t:'Strength'},
+  {id:'lat_pull',n:'Lat Pulldown',m:'back',t:'Hypertrophy'},
+  {id:'trow',n:'T-Bar Row',m:'back',t:'Strength'},
+  {id:'ohp',n:'Overhead Press',m:'shoulders',t:'Strength'},
+  {id:'lat_raise',n:'Lateral Raises',m:'shoulders',t:'Hypertrophy'},
+  {id:'front_raise',n:'Front Raises',m:'shoulders',t:'Hypertrophy'},
+  {id:'face_pull',n:'Face Pulls',m:'shoulders',t:'Hypertrophy'},
+  {id:'curl',n:'Barbell Curl',m:'biceps',t:'Strength'},
+  {id:'hammer',n:'Hammer Curl',m:'biceps',t:'Hypertrophy'},
+  {id:'preacher',n:'Preacher Curl',m:'biceps',t:'Hypertrophy'},
+  {id:'pushdown',n:'Tricep Pushdown',m:'triceps',t:'Hypertrophy'},
+  {id:'skull',n:'Skull Crushers',m:'triceps',t:'Strength'},
+  {id:'dip',n:'Dips',m:'triceps',t:'Bodyweight'},
+  {id:'squat',n:'Barbell Squat',m:'legs',t:'Strength'},
+  {id:'leg_press',n:'Leg Press',m:'legs',t:'Strength'},
+  {id:'rdl',n:'Romanian Deadlift',m:'legs',t:'Strength'},
+  {id:'lunge',n:'Lunges',m:'legs',t:'Bodyweight'},
+  {id:'leg_curl',n:'Leg Curl',m:'legs',t:'Hypertrophy'},
+  {id:'hip_thrust',n:'Hip Thrust',m:'glutes',t:'Strength'},
+  {id:'glute_bridge',n:'Glute Bridge',m:'glutes',t:'Bodyweight'},
+  {id:'plank',n:'Plank',m:'core',t:'Bodyweight'},
+  {id:'crunch',n:'Crunches',m:'core',t:'Bodyweight'},
+  {id:'ab_wheel',n:'Ab Wheel',m:'core',t:'Bodyweight'},
+  {id:'hanging_leg',n:'Hanging Leg Raise',m:'core',t:'Bodyweight'},
+  {id:'calf_raise',n:'Calf Raise',m:'calves',t:'Hypertrophy'},
+  {id:'seated_calf',n:'Seated Calf Raise',m:'calves',t:'Hypertrophy'},
+  {id:'wrist_curl',n:'Wrist Curl',m:'forearms',t:'Hypertrophy'},
+];
+const ACHIEV=[
+  {id:'first_set',n:'First Rep',d:'Log your first set',i:'⚡'},
+  {id:'first_pr',n:'Iron Will',d:'Set a new PR',i:'🏆'},
+  {id:'streak_7',n:'7-Day Streak',d:'Train 7 days in a row',i:'🔥'},
+  {id:'vol_1k',n:'1,000kg Club',d:'Lift 1,000 kg total',i:'💪'},
+  {id:'vol_10k',n:'10,000kg Club',d:'Lift 10,000 kg total',i:'⚔'},
+  {id:'gold_muscle',n:'Golden Muscle',d:'Reach Gold rank in any muscle',i:'🥇'},
+  {id:'diamond_muscle',n:'Diamond',d:'Reach Diamond in any muscle',i:'💎'},
+  {id:'lvl_10',n:'Awakened',d:'Reach Level 10',i:'🌀'},
+];
+const STATMAP={chest:'str',back:'str',shoulders:'str',biceps:'str',triceps:'str',legs:'str',glutes:'vit',core:'vit',calves:'agi',forearms:'int'};
+const DEF={name:'HUNTER',playerClass:'athlete',level:1,xp:0,stats:{str:1,vit:1,agi:1,int:1},statXp:{str:0,vit:0,agi:0,int:0},muscleVol:{},prs:{},workouts:[],streak:0,lastDay:null,weekXp:0,weekVol:0,weekPrs:0,totalVol:0,achievements:[],customExList:[],notes:[],nid:1,nnid:1};
+let S=load();
+MUSCLES.forEach(m=>{if(S.muscleVol[m.id]==null)S.muscleVol[m.id]=0;});
+['weekXp','weekVol','weekPrs','totalVol'].forEach(k=>{if(!S[k])S[k]=0;});
+if(!S.achievements)S.achievements=[];
+if(!S.customExList)S.customExList=[];
+if(!S.notes)S.notes=[];
+if(!S.nnid)S.nnid=1;
+
+function allEx(){return [...EXLIST,...S.customExList];}
+function getEx(id){return allEx().find(x=>x.id===id);}
+
+function load(){try{const d=localStorage.getItem('tsSys3');return d?JSON.parse(d):JSON.parse(JSON.stringify(DEF));}catch(e){return JSON.parse(JSON.stringify(DEF));}}
+function save(){localStorage.setItem('tsSys3',JSON.stringify(S));}
+function todayKey(){return new Date().toISOString().split('T')[0];}
+
+// SESSION
+let sess=null,timer=null,secs=0;
+
+function startWorkout(){
+  sess={exercises:[],totalVol:0,totalSets:0,xpEarned:0,prsHit:[]};
+  secs=0;
+  timer=setInterval(()=>{
+    secs++;
+    const m=String(Math.floor(secs/60)).padStart(2,'0'),s=String(secs%60).padStart(2,'0');
+    const el=document.getElementById('woT');if(el)el.textContent=`${m}:${s}`;
+  },1000);
+  setPage('workout',document.querySelectorAll('.nbtn')[1]);
+  renderWo();
+}
+
+function endWorkout(){
+  if(!sess||!sess.exercises.length){toast('No exercises logged!');return;}
+  clearInterval(timer);
+  const today=todayKey();
+  if(S.lastDay!==today){
+    if(S.lastDay){const d=Math.floor((new Date(today)-new Date(S.lastDay))/86400000);S.streak=d===1?S.streak+1:1;}else S.streak=1;
+    S.lastDay=today;
+  }
+  S.weekXp=(S.weekXp||0)+sess.xpEarned;
+  S.weekVol=(S.weekVol||0)+sess.totalVol;
+  S.weekPrs=(S.weekPrs||0)+sess.prsHit.length;
+  const wo={id:S.nid++,date:today,exercises:sess.exercises.map(e=>({...e,sets:e.sets.map(s=>({...s}))})),volume:sess.totalVol,xp:sess.xpEarned,duration:secs,prs:sess.prsHit};
+  S.workouts.unshift(wo);if(S.workouts.length>50)S.workouts.pop();
+  addXp(sess.xpEarned);
+  S.totalVol=(S.totalVol||0)+sess.totalVol;
+  checkAch();save();
+  showSum(wo);
+  sess=null;renderWo();
+}
+
+function showSum(wo){
+  const dur=`${Math.floor(wo.duration/60)}m ${wo.duration%60}s`;
+  document.getElementById('sumContent').innerHTML=`
+    <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;margin-bottom:14px">
+      <div style="text-align:center;background:var(--cd);border:1px solid var(--bdr);border-radius:2px;padding:10px">
+        <div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--c)">${wo.volume.toFixed(0)}</div>
+        <div style="font-size:9px;color:var(--txd);margin-top:2px">kg Volume</div>
+      </div>
+      <div style="text-align:center;background:rgba(255,200,61,.06);border:1px solid rgba(255,200,61,.2);border-radius:2px;padding:10px">
+        <div style="font-family:'Orbitron',monospace;font-size:18px;font-weight:700;color:var(--gold)">+${wo.xp}</div>
+        <div style="font-size:9px;color:var(--txd);margin-top:2px">XP Earned</div>
+      </div>
+      <div style="text-align:center;background:rgba(46,204,113,.06);border:1px solid rgba(46,204,113,.2);border-radius:2px;padding:10px">
+        <div style="font-family:'Orbitron',monospace;font-size:14px;font-weight:700;color:var(--grn)">${dur}</div>
+        <div style="font-size:9px;color:var(--txd);margin-top:2px">Duration</div>
+      </div>
+    </div>
+    ${wo.prs.length?`<div style="margin-bottom:10px;padding:10px;background:rgba(255,200,61,.07);border:1px solid rgba(255,200,61,.2);border-radius:2px">
+      <div style="font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--gold);margin-bottom:6px">NEW PRs HIT</div>
+      ${wo.prs.map(p=>`<div style="font-size:13px;color:var(--gold);padding:2px 0">🏆 ${p}</div>`).join('')}
+    </div>`:''}
+    <div style="font-family:'Orbitron',monospace;font-size:8px;letter-spacing:2px;color:var(--txm);margin-bottom:6px">EXERCISES</div>
+    ${wo.exercises.map(e=>{
+      const ex=getEx(e.id);
+      const done=e.sets.filter(s=>s.done);
+      const evol=done.reduce((a,s)=>a+(s.w||0)*(s.r||0),0);
+      return `<div style="display:flex;justify-content:space-between;padding:6px 0;border-bottom:1px solid rgba(0,242,255,.06);font-size:13px">
+        <span style="color:var(--txd)">${ex?.n||e.id}</span>
+        <span style="color:var(--c)">${done.length} sets · ${evol.toFixed(0)}kg</span>
+      </div>`;
+    }).join('')}
+  `;
+  document.getElementById('sumModal').classList.add('show');
+}
+
+// EX PICKER
+function openExPicker(){filterEx();document.getElementById('exModal').classList.add('show');}
+function filterEx(){
+  const q=(document.getElementById('exSrch')?.value||'').toLowerCase();
+  const mf=document.getElementById('exMF')?.value||'';
+  const list=allEx().filter(e=>(!q||e.n.toLowerCase().includes(q))&&(!mf||e.m===mf));
+  document.getElementById('epList').innerHTML=list.map(e=>{
+    const m=MUSCLES.find(x=>x.id===e.m);
+    const isCustom=!!S.customExList.find(x=>x.id===e.id);
+    return `<div class="ep-item" onclick="addEx('${e.id}')">
+      <div style="width:8px;height:8px;border-radius:50%;background:${m?.c||'#888'};flex-shrink:0"></div>
+      <div style="flex:1"><div class="ep-name">${e.n}${isCustom?' <span style="font-size:9px;color:var(--p);font-family:Orbitron,monospace">[CUSTOM]</span>':''}</div><div class="ep-meta">${m?.n||e.m||'Custom'} · ${e.t}</div></div>
+      ${isCustom?`<button onclick="event.stopPropagation();deleteCustomEx('${e.id}')" style="background:none;border:none;color:rgba(255,71,87,.6);cursor:pointer;font-size:13px;padding:0 4px">✕</button>`:''}
+    </div>`;
+  }).join('')||'<div class="empty">No exercises found</div>';
+}
+function toggleCexForm(){const f=document.getElementById('cexForm');f.classList.toggle('show');}
+function saveCustomEx(){
+  const name=document.getElementById('cexName').value.trim();
+  const muscle=document.getElementById('cexMuscle').value;
+  const type=document.getElementById('cexType').value;
+  if(!name||!muscle){toast('Enter name and muscle group');return;}
+  const id='cx_'+Date.now();
+  S.customExList.push({id,n:name,m:muscle,t:type,custom:true});
+  save();
+  addEx(id);
+  document.getElementById('cexName').value='';
+  document.getElementById('cexForm').classList.remove('show');
+  toast('Custom exercise added!');
+}
+function deleteCustomEx(id){
+  S.customExList=S.customExList.filter(e=>e.id!==id);
+  save();filterEx();toast('Custom exercise removed');
+}
+function addEx(exId){if(!sess)return;sess.exercises.push({id:exId,sets:[newSet()]});closeModal('exModal');renderWo();}
+function newSet(){return {w:'',r:'',done:false};}
+function addSet(ei){sess.exercises[ei].sets.push(newSet());renderWo();}
+function removeEx(ei){sess.exercises.splice(ei,1);renderWo();}
+
+function completeSet(ei,si){
+  const s=sess.exercises[ei].sets[si];
+  const wEl=document.querySelector(`[data-w="${ei}-${si}"]`);
+  const rEl=document.querySelector(`[data-r="${ei}-${si}"]`);
+  if(wEl)s.w=parseFloat(wEl.value)||0;
+  if(rEl)s.r=parseInt(rEl.value)||0;
+  if(!s.w||!s.r){toast('Enter weight and reps first');return;}
+  s.done=!s.done;
+  if(s.done){
+    const vol=s.w*s.r;
+    sess.totalVol+=vol;sess.totalSets++;
+    const xp=Math.max(3,Math.round(vol*0.05));
+    sess.xpEarned+=xp;
+    const exDef=getEx(sess.exercises[ei].id);
+    S.muscleVol[exDef.m]=(S.muscleVol[exDef.m]||0)+vol;
+    addStatXp(STATMAP[exDef.m]||'str',Math.floor(xp*0.7));
+    // PR check
+    const pk=exDef.id;
+    const prev=S.prs[pk];
+    if(!prev||s.w>prev.w||(s.w===prev.w&&s.r>prev.r)){
+      const wasPrev=!!prev;
+      S.prs[pk]={w:s.w,r:s.r,date:todayKey()};
+      if(wasPrev){sess.prsHit.push(`${exDef.n}: ${s.w}kg × ${s.r}`);prFlash(`${exDef.n} — ${s.w}kg`);}
+    }
+    const wv=document.getElementById('woV'),ws=document.getElementById('woS');
+    if(wv)wv.textContent=sess.totalVol.toFixed(0)+' kg';
+    if(ws)ws.textContent=sess.totalSets;
+    save();
+  }
+  renderWo();
+}
+
+function renderWo(){
+  const idle=document.getElementById('wo-idle'),active=document.getElementById('wo-active');
+  if(!sess){
+    idle.style.display='';active.style.display='none';
+    const rw=document.getElementById('recentWo');
+    if(!S.workouts.length){rw.innerHTML='<div class="empty">No sessions yet.<br>Tap Begin Session to start.</div>';return;}
+    rw.innerHTML=S.workouts.slice(0,6).map(w=>{
+      const dur=`${Math.floor(w.duration/60)}m`;
+      const names=w.exercises.map(e=>getEx(e.id)?.n||e.id).slice(0,2).join(', ')+(w.exercises.length>2?` +${w.exercises.length-2} more`:'');
+      return `<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid rgba(0,242,255,.06)">
+        <div><div style="font-size:13px;font-weight:600">${names}</div><div style="font-size:10px;color:var(--txd);margin-top:2px">${w.date} · ${dur}</div></div>
+        <div style="text-align:right"><div style="font-size:13px;color:var(--c);font-family:'Orbitron',monospace">${w.volume.toFixed(0)} kg</div><div style="font-size:9px;color:var(--gold)">+${w.xp} XP</div></div>
+      </div>`;
+    }).join('');
+    return;
+  }
+  idle.style.display='none';active.style.display='';
+  document.getElementById('woEx').innerHTML=sess.exercises.map((ex,ei)=>{
+    const exDef=getEx(ex.id);
+    const m=MUSCLES.find(x=>x.id===exDef?.m);
+    const pr=S.prs[ex.id];
+    return `<div class="panel" style="margin-bottom:10px">
+      <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="width:8px;height:8px;border-radius:50%;background:${m?.c||'#888'};flex-shrink:0"></div>
+          <div style="font-size:14px;font-weight:700">${exDef?.n||ex.id}</div>
+        </div>
+        <div style="font-size:10px;color:var(--gold)">${pr?`PR: ${pr.w}kg×${pr.r}`:''}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:26px 1fr 1fr 34px 48px;gap:6px;align-items:center;margin-bottom:6px;padding-bottom:6px;border-bottom:1px solid var(--bdr)">
+        <div class="si-n">#</div>
+        <div class="si-n">KG</div>
+        <div class="si-n">REPS</div>
+        <div></div>
+        <div class="si-n">XP</div>
+      </div>
+      ${ex.sets.map((s,si)=>{
+        const sxp=s.done?Math.max(3,Math.round((s.w||0)*(s.r||0)*0.05)):0;
+        return `<div class="si">
+          <div class="si-n">${si+1}</div>
+          <input class="si-inp" type="number" placeholder="kg" value="${s.w||''}" data-w="${ei}-${si}" ${s.done?'disabled':''} step="0.5" min="0">
+          <input class="si-inp" type="number" placeholder="reps" value="${s.r||''}" data-r="${ei}-${si}" ${s.done?'disabled':''} min="1">
+          <button class="si-done ${s.done?'ok':''}" onclick="completeSet(${ei},${si})">
+            <svg width="12" height="10" viewBox="0 0 12 10" fill="none" stroke="${s.done?'#fff':'var(--txm)'}" stroke-width="2" stroke-linecap="round"><path d="M1 5L4.5 8.5L11 1"/></svg>
+          </button>
+          <div class="si-xp">${s.done?'+'+sxp:''}</div>
+        </div>`;
+      }).join('')}
+      <div class="brow" style="margin-top:4px">
+        <button class="btn" style="font-size:8px;padding:5px 10px" onclick="addSet(${ei})">+ Set</button>
+        <button class="btn rd" style="font-size:8px;padding:5px 10px" onclick="removeEx(${ei})">Remove</button>
+      </div>
+    </div>`;
+  }).join('')||'<div class="empty">No exercises yet.<br>Tap + Add Exercise below.</div>';
+}
+
+// XP/LEVELING
+function xpNeed(lvl){return Math.floor(100*Math.pow(lvl,1.35));}
+function stXpNeed(v){return v*60;}
+function addXp(amt){
+  S.xp+=amt;
+  let lv=false;
+  while(S.xp>=xpNeed(S.level)){S.xp-=xpNeed(S.level);S.level++;lv=true;}
+  if(lv){document.getElementById('lvlN').textContent=S.level;document.getElementById('lvlSub').textContent=`You have ascended to Level ${S.level}`;document.getElementById('lvlup').classList.add('show');}
+}
+function addStatXp(stat,amt){
+  const bonus=(S.playerClass==='strength'&&stat==='str')||(S.playerClass==='athlete'&&stat==='agi')||(S.playerClass==='builder'&&stat==='vit')?1.1:1;
+  S.statXp[stat]+=Math.floor(amt*bonus);
+  while(S.statXp[stat]>=stXpNeed(S.stats[stat])){S.statXp[stat]-=stXpNeed(S.stats[stat]);S.stats[stat]++;toast(`${stat.toUpperCase()} increased to ${S.stats[stat]}!`);}
+}
+
+// MUSCLE RANKS
+function mRank(id){const v=S.muscleVol[id]||0;let r=0;for(let i=RVOL.length-1;i>=0;i--){if(v>=RVOL[i]){r=i;break;}}return r;}
+function mPct(id){const v=S.muscleVol[id]||0,r=mRank(id);if(r>=RNKS.length-1)return 100;return Math.round((v-RVOL[r])/(RVOL[r+1]-RVOL[r])*100);}
+
+// ACHIEVEMENTS
+function checkAch(){
+  const u=(id)=>{if(!S.achievements.includes(id)){S.achievements.push(id);const a=ACHIEV.find(x=>x.id===id);if(a)toast(`Achievement: ${a.n}!`,'lv');}};
+  if(S.totalVol>0)u('first_set');
+  if((sess?.prsHit.length||0)>0)u('first_pr');
+  if(S.streak>=7)u('streak_7');
+  if(S.totalVol>=1000)u('vol_1k');
+  if(S.totalVol>=10000)u('vol_10k');
+  if(S.level>=10)u('lvl_10');
+  MUSCLES.forEach(m=>{const r=mRank(m.id);if(r>=3)u('gold_muscle');if(r>=5)u('diamond_muscle');});
+}
+
+// RENDERS
+function renderHdr(){
+  document.getElementById('hDate').textContent=new Date().toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'});
+  const cls=S.playerClass;
+  document.getElementById('pcN').textContent=S.name;
+  document.getElementById('av').textContent=S.name.charAt(0);
+  const ct=document.getElementById('clsTag');
+  ct.textContent=cls==='strength'?'STRENGTH':cls==='builder'?'BUILDER':'ATHLETE';
+  ct.className=`cls-tag cls-${cls}`;
+  document.getElementById('lvTxt').textContent=`LV.${S.level}`;
+  const pct=Math.min(100,Math.round(S.xp/xpNeed(S.level)*100));
+  document.getElementById('xpF').style.width=pct+'%';
+  document.getElementById('xpL').textContent=`${S.xp}/${xpNeed(S.level)} XP`;
+}
+
+function renderHome(){
+  renderHdr();
+  const today=todayKey();
+  const tDays=new Set(S.workouts.map(w=>w.date));
+  const dow=(new Date().getDay()+6)%7;
+  const days=['M','T','W','T','F','S','S'];
+  document.getElementById('wkGrid').innerHTML=days.map((d,i)=>{
+    const dt=new Date();dt.setDate(dt.getDate()-(dow-i));
+    const key=dt.toISOString().split('T')[0];
+    const done=tDays.has(key),isTd=key===today;
+    return `<div class="wd ${done?'done':''} ${isTd&&!done?'today':''}"><div>${dt.getDate()}</div><div class="dd">${d}</div></div>`;
+  }).join('');
+  document.getElementById('hStreak').textContent=S.streak;
+  document.getElementById('hXP').textContent=S.weekXp||0;
+  document.getElementById('hVol').textContent=Math.round(S.weekVol||0);
+  document.getElementById('hPR').textContent=S.weekPrs||0;
+  document.getElementById('totVol').textContent=Math.round(S.totalVol||0)+' kg';
+  const sdefs=[{k:'str',l:'STR',c:'str'},{k:'vit',l:'VIT',c:'vit'},{k:'agi',l:'AGI',c:'agi'},{k:'int',l:'INT',c:'int'}];
+  document.getElementById('statRow').innerHTML=sdefs.map(s=>`<div class="stat-pill"><div class="sp-v ${s.c}">${S.stats[s.k]}</div><div class="sp-l">${s.l}</div></div>`).join('');
+  const sorted=[...MUSCLES].sort((a,b)=>(S.muscleVol[b.id]||0)-(S.muscleVol[a.id]||0)).slice(0,4);
+  const rclr=['#555','#cd7f32','#a8a9ad','#ffd700','#00cfff','#b04aff','#ff6b35'];
+  document.getElementById('homeMusc').innerHTML=sorted.map(m=>{
+    const r=mRank(m.id),pct=mPct(m.id);
+    return `<div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="font-size:18px;width:28px;text-align:center">${m.e}</div>
+      <div style="flex:1">
+        <div style="display:flex;justify-content:space-between;margin-bottom:4px">
+          <span style="font-size:12px;font-weight:600">${m.n}</span>
+          <span style="font-size:9px;font-family:'Orbitron',monospace;color:${rclr[r]}">${RNKS[r]}</span>
+        </div>
+        <div class="mg-bar"><div class="mg-fill rf${r}" style="width:${pct}%;background:${rclr[r]}"></div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// MUSCLE ACCORDION
+let openMuscle=null;
+function toggleMuscle(id){
+  openMuscle=openMuscle===id?null:id;
+  renderMuscles();
+}
+function renderMuscles(){
+  const rclr=['#555','#cd7f32','#a8a9ad','#ffd700','#00cfff','#b04aff','#ff6b35'];
+  document.getElementById('rkLeg').innerHTML=RNKS.map((r,i)=>`<div style="display:flex;align-items:center;gap:4px"><div style="width:8px;height:8px;border-radius:50%;background:${rclr[i]}"></div><span style="font-size:9px;color:var(--txd)">${r}</span></div>`).join('');
+  document.getElementById('muscleList').innerHTML=MUSCLES.map(m=>{
+    const r=mRank(m.id),pct=mPct(m.id),vol=Math.round(S.muscleVol[m.id]||0);
+    const isOpen=openMuscle===m.id;
+    // all exercises for this muscle that have been logged at least once (have a PR) + custom
+    const muscleExs=allEx().filter(e=>e.m===m.id);
+    const loggedExIds=new Set(Object.keys(S.prs));
+    const doneExs=muscleExs.filter(e=>loggedExIds.has(e.id));
+    const neverExs=muscleExs.filter(e=>!loggedExIds.has(e.id));
+    const exRows=[...doneExs,...neverExs].map(e=>{
+      const pr=S.prs[e.id];
+      return `<div class="ml-ex-row">
+        <div>
+          <div class="ml-ex-name">${e.n}${e.custom?` <span style="font-size:8px;color:var(--p);font-family:Orbitron,monospace">[C]</span>`:''}</div>
+          <div class="ml-ex-sub">${e.t}</div>
+        </div>
+        <div class="ml-pr">
+          ${pr
+            ?`<div class="ml-pr-val">${pr.w}kg × ${pr.r}</div><div class="ml-pr-date">${pr.date}</div>`
+            :`<div style="font-size:10px;color:var(--txm)">No PR yet</div>`}
+        </div>
+      </div>`;
+    }).join('');
+    return `<div class="ml-item ${isOpen?'open':''}">
+      <div class="ml-header" onclick="toggleMuscle('${m.id}')">
+        <div class="ml-emoji" style="background:${m.c}22;border:1px solid ${m.c}44">${m.e}</div>
+        <div class="ml-info">
+          <div style="display:flex;align-items:center;justify-content:space-between">
+            <div class="ml-name">${m.n}</div>
+            <div class="ml-rnk" style="color:${rclr[r]}">${RNKS[r]}</div>
+          </div>
+          <div class="ml-prog"><div class="ml-progf" style="width:${pct}%;background:${rclr[r]}"></div></div>
+          <div style="font-size:9px;color:var(--txm);margin-top:3px">${vol} kg vol · ${doneExs.length} exercise${doneExs.length!==1?'s':''} logged</div>
+        </div>
+        <div class="ml-arrow">▾</div>
+      </div>
+      <div class="ml-body">
+        <div style="font-family:'Orbitron',monospace;font-size:7.5px;letter-spacing:2px;color:var(--txm);display:grid;grid-template-columns:1fr auto;padding:6px 0 4px;border-bottom:1px solid var(--bdr)"><span>EXERCISE</span><span>BEST PR</span></div>
+        ${exRows||'<div class="ml-no-ex">No exercises recorded yet</div>'}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// CALENDAR
+let calYear=new Date().getFullYear(),calMonth2=new Date().getMonth();
+function calPrev(){calMonth2--;if(calMonth2<0){calMonth2=11;calYear--;}renderCalendar();}
+function calNext(){calMonth2++;if(calMonth2>11){calMonth2=0;calYear++;}renderCalendar();}
+function renderCalendar(){
+  const mNames=['January','February','March','April','May','June','July','August','September','October','November','December'];
+  document.getElementById('calMonth').textContent=`${mNames[calMonth2]} ${calYear}`;
+  document.getElementById('calHdrs').innerHTML=['M','T','W','T','F','S','S'].map(d=>`<div class="cal-day-hdr">${d}</div>`).join('');
+  const today=todayKey();
+  // build date→muscles worked map
+  const woMap={};
+  S.workouts.forEach(w=>{
+    if(!woMap[w.date])woMap[w.date]=new Set();
+    w.exercises.forEach(e=>{const ex=getEx(e.id);if(ex)woMap[w.date].add(ex.m);});
+  });
+  const rclr={'chest':'#ff6b35','back':'#00cfff','shoulders':'#a855f7','biceps':'#ff4757','triceps':'#ffa502','legs':'#2ecc71','glutes':'#ff6b35','core':'#ffc83d','calves':'#1e90ff','forearms':'#a29bfe'};
+  const firstDay=new Date(calYear,calMonth2,1);
+  const lastDay=new Date(calYear,calMonth2+1,0);
+  const startDow=(firstDay.getDay()+6)%7; // 0=Mon
+  let cells='';
+  for(let i=0;i<startDow;i++)cells+=`<div class="cal-day empty-day"></div>`;
+  for(let d=1;d<=lastDay.getDate();d++){
+    const key=`${calYear}-${String(calMonth2+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const muscles=woMap[key]?[...woMap[key]]:[];
+    const isToday=key===today;
+    const hasWo=muscles.length>0;
+    const dots=muscles.slice(0,6).map(mid=>`<div class="cal-dot" style="background:${rclr[mid]||'#888'}"></div>`).join('');
+    cells+=`<div class="cal-day ${isToday?'today':''} ${hasWo?'has-wo':''}" onclick="calDayClick('${key}')">
+      <div class="cal-day-n">${d}</div>
+      <div class="cal-dots">${dots}</div>
+    </div>`;
+  }
+  document.getElementById('calGrid').innerHTML=cells;
+  document.getElementById('calDetail').classList.remove('show');
+}
+function calDayClick(key){
+  const wo=S.workouts.filter(w=>w.date===key);
+  const det=document.getElementById('calDetail');
+  if(!wo.length){det.classList.remove('show');return;}
+  const mColors={'chest':'#ff6b35','back':'#00cfff','shoulders':'#a855f7','biceps':'#ff4757','triceps':'#ffa502','legs':'#2ecc71','glutes':'#ff6b35','core':'#ffc83d','calves':'#1e90ff','forearms':'#a29bfe'};
+  det.innerHTML=wo.map(w=>{
+    const dur=`${Math.floor(w.duration/60)}m ${w.duration%60}s`;
+    const exLines=w.exercises.map(e=>{
+      const ex=getEx(e.id);const ms=MUSCLES.find(x=>x.id===ex?.m);
+      const done=e.sets.filter(s=>s.done);const vol=done.reduce((a,s)=>a+(s.w||0)*(s.r||0),0);
+      return `<div style="display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid rgba(0,242,255,.05)">
+        <div style="width:7px;height:7px;border-radius:50%;background:${mColors[ex?.m]||'#888'};flex-shrink:0"></div>
+        <div style="flex:1;font-size:12px">${ex?.n||e.id}</div>
+        <div style="font-size:10px;color:var(--c)">${done.length}×sets · ${vol.toFixed(0)}kg</div>
+      </div>`;
+    }).join('');
+    return `<div style="font-family:'Orbitron',monospace;font-size:9px;letter-spacing:1.5px;color:var(--c);margin-bottom:8px">${key} · ${dur} · +${w.xp}XP</div>${exLines}`;
+  }).join('');
+  det.classList.add('show');
+}
+
+function renderProgress(){
+  renderHdr();
+  renderCalendar();
+  const last7=S.workouts.slice(0,7).reverse();
+  const maxV=Math.max(...last7.map(w=>w.volume),1);
+  const chart=document.getElementById('volChart');
+  chart.innerHTML=last7.length
+    ?last7.map(w=>{const h=Math.max(6,Math.round(w.volume/maxV*58));const d=w.date.slice(5);return `<div class="cb" style="height:${h}px;background:var(--cm);border-radius:1px"><span>${d}</span></div>`;}).join('')
+    :'<div class="empty" style="flex:1">No workouts yet</div>';
+  const prEl=document.getElementById('prTbl');
+  const prs=Object.entries(S.prs);
+  prEl.innerHTML=prs.length
+    ?`<table class="ht"><thead><tr><th>Exercise</th><th>Weight</th><th>Reps</th><th>Date</th></tr></thead><tbody>${prs.map(([id,pr])=>{const ex=getEx(id);return `<tr><td class="hl">${ex?.n||id}</td><td class="pr">${pr.w}kg</td><td>${pr.r}</td><td style="font-size:10px;color:var(--txm)">${pr.date}</td></tr>`;}).join('')}</tbody></table>`
+    :'<div class="empty">No PRs yet. Start lifting!</div>';
+  document.getElementById('achGrid').innerHTML=ACHIEV.map(a=>{
+    const has=S.achievements.includes(a.id);
+    return `<div style="background:${has?'rgba(255,200,61,.06)':'rgba(0,242,255,.02)'};border:1px solid ${has?'rgba(255,200,61,.25)':'rgba(0,242,255,.08)'};border-radius:2px;padding:10px;opacity:${has?1:.4}">
+      <div style="font-size:20px;margin-bottom:4px">${a.i}</div>
+      <div style="font-size:12px;font-weight:700;color:${has?'var(--gold)':'var(--txm)'}">${a.n}</div>
+      <div style="font-size:10px;color:var(--txm);margin-top:2px">${a.d}</div>
+    </div>`;
+  }).join('');
+}
+
+// PAGE SWITCH
+function setPage(name,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.nbtn').forEach(b=>b.classList.remove('active'));
+  document.getElementById('pg-'+name).classList.add('active');
+  btn.classList.add('active');
+  if(name==='home')renderHome();
+  else if(name==='muscles')renderMuscles();
+  else if(name==='progress')renderProgress();
+  else if(name==='workout')renderWo();
+  else if(name==='notes')renderNotes();
+}
+
+// MODALS
+function closeModal(id){document.getElementById(id).classList.remove('show');}
+function openClassModal(){document.getElementById('classModal').classList.add('show');}
+function setClass(cls){S.playerClass=cls;save();closeModal('classModal');renderHdr();renderHome();toast(`Class: ${cls.charAt(0).toUpperCase()+cls.slice(1)}`);}
+function promptName(){
+  const inp=document.getElementById('nameInput');
+  inp.value=S.name;
+  document.getElementById('nameCharCount').textContent=S.name.length;
+  inp.oninput=function(){this.value=this.value.toUpperCase();document.getElementById('nameCharCount').textContent=this.value.length;};
+  document.getElementById('nameModal').classList.add('show');
+  setTimeout(()=>inp.focus(),100);
+}
+function saveName(){
+  const v=document.getElementById('nameInput').value.trim();
+  if(!v){toast('Name cannot be empty');return;}
+  S.name=v.toUpperCase().slice(0,12);
+  save();renderHdr();
+  closeModal('nameModal');
+  toast('Name updated: '+S.name);
+}
+
+// FEEDBACK
+function toast(msg,type=''){const w=document.getElementById('toasts');const t=document.createElement('div');t.className='toast '+type;t.textContent=msg;w.appendChild(t);setTimeout(()=>t.remove(),3100);}
+function prFlash(lbl){const el=document.getElementById('prf');document.getElementById('prSub').textContent=lbl;el.classList.add('show');setTimeout(()=>el.classList.remove('show'),1400);toast('NEW PR: '+lbl,'lv');}
+
+// ─── NOTES ───
+const NOTE_TAGS = [
+  {id:'general',  label:'General',     color:'#00f2ff'},
+  {id:'plan',     label:'Workout Plan',color:'#a855f7'},
+  {id:'nutrition',label:'Nutrition',   color:'#2ecc71'},
+  {id:'pr_log',   label:'PR Log',      color:'#ffc83d'},
+  {id:'form',     label:'Form Cues',   color:'#ff6b35'},
+  {id:'goals',    label:'Goals',       color:'#ff4757'},
+];
+let activeTagFilter = 'all';
+let expandedNote = null;
+let editingNoteId = null;
+
+function getNoteTag(id){ return NOTE_TAGS.find(t=>t.id===id) || {label:id,color:'#888'}; }
+
+function initNoteCompose(){
+  // tag picker buttons
+  document.getElementById('noteTagPicker').innerHTML = NOTE_TAGS.map(t=>`
+    <button class="tf-btn" id="ntag-${t.id}" onclick="toggleNoteTag('${t.id}')"
+      style="border-color:${t.color}33;color:${t.color}99">${t.label}</button>
+  `).join('');
+  // tag filter bar
+  document.getElementById('tagFilters').innerHTML =
+    `<button class="tf-btn active" id="tf-all" onclick="setTagFilter('all')">All</button>` +
+    NOTE_TAGS.map(t=>`<button class="tf-btn" id="tf-${t.id}" onclick="setTagFilter('${t.id}')"
+      style="--tc:${t.color}">${t.label}</button>`).join('');
+}
+
+let selectedNoteTags = [];
+function toggleNoteTag(id){
+  const idx = selectedNoteTags.indexOf(id);
+  if(idx>-1) selectedNoteTags.splice(idx,1); else selectedNoteTags.push(id);
+  document.querySelectorAll('[id^="ntag-"]').forEach(b=>{
+    const tid = b.id.replace('ntag-','');
+    const t = getNoteTag(tid);
+    const on = selectedNoteTags.includes(tid);
+    b.style.borderColor = on ? t.color : t.color+'33';
+    b.style.color = on ? t.color : t.color+'99';
+    b.style.background = on ? t.color+'1a' : '';
+  });
+}
+
+function setTagFilter(id){
+  activeTagFilter = id;
+  document.querySelectorAll('[id^="tf-"]').forEach(b=>b.classList.remove('active'));
+  document.getElementById('tf-'+id)?.classList.add('active');
+  renderNotes();
+}
+
+function saveNote(){
+  const title = document.getElementById('noteTitle').value.trim();
+  const body  = document.getElementById('noteBody').value.trim();
+  if(!body){ toast('Write something first'); return; }
+
+  if(editingNoteId !== null){
+    const n = S.notes.find(x=>x.id===editingNoteId);
+    if(n){ n.title=title; n.body=body; n.tags=[...selectedNoteTags]; n.edited=todayKey(); }
+    editingNoteId = null;
+  } else {
+    S.notes.unshift({
+      id: S.nnid++,
+      title: title || null,
+      body,
+      tags: [...selectedNoteTags],
+      date: todayKey(),
+      pinned: false
+    });
+  }
+  save();
+  clearCompose();
+  renderNotes();
+  toast('Note saved');
+}
+
+function clearCompose(){
+  document.getElementById('noteTitle').value='';
+  document.getElementById('noteBody').value='';
+  selectedNoteTags=[];
+  editingNoteId=null;
+  toggleNoteTag(''); // reset visuals
+  document.querySelectorAll('[id^="ntag-"]').forEach(b=>{
+    const t=getNoteTag(b.id.replace('ntag-',''));
+    b.style.borderColor=t.color+'33';b.style.color=t.color+'99';b.style.background='';
+  });
+  document.getElementById('noteCompose').querySelector('.ptitle').textContent='New Note';
+}
+
+function editNote(id){
+  const n = S.notes.find(x=>x.id===id);
+  if(!n) return;
+  editingNoteId = id;
+  document.getElementById('noteTitle').value = n.title||'';
+  document.getElementById('noteBody').value = n.body;
+  selectedNoteTags = [...(n.tags||[])];
+  // reflect tag selection
+  document.querySelectorAll('[id^="ntag-"]').forEach(b=>{
+    const tid=b.id.replace('ntag-',''),t=getNoteTag(tid),on=selectedNoteTags.includes(tid);
+    b.style.borderColor=on?t.color:t.color+'33';
+    b.style.color=on?t.color:t.color+'99';
+    b.style.background=on?t.color+'1a':'';
+  });
+  document.getElementById('noteCompose').querySelector('.ptitle').textContent='Edit Note';
+  document.getElementById('noteCompose').scrollIntoView({behavior:'smooth'});
+}
+
+function deleteNote(id){
+  S.notes = S.notes.filter(x=>x.id!==id);
+  if(expandedNote===id) expandedNote=null;
+  save(); renderNotes();
+}
+
+function pinNote(id){
+  const n = S.notes.find(x=>x.id===id);
+  if(!n) return;
+  n.pinned = !n.pinned;
+  save(); renderNotes();
+  toast(n.pinned ? 'Note pinned' : 'Note unpinned');
+}
+
+function toggleExpand(id){
+  expandedNote = expandedNote===id ? null : id;
+  renderNotes();
+}
+
+function renderNotes(){
+  const q = (document.getElementById('noteSearch')?.value||'').toLowerCase();
+  let list = [...S.notes];
+
+  // filter by tag
+  if(activeTagFilter!=='all') list=list.filter(n=>(n.tags||[]).includes(activeTagFilter));
+  // filter by search
+  if(q) list=list.filter(n=>(n.title||'').toLowerCase().includes(q)||(n.body||'').toLowerCase().includes(q));
+  // sort: pinned first, then by id desc (newest first)
+  list.sort((a,b)=>(b.pinned?1:0)-(a.pinned?1:0)||(b.id-a.id));
+
+  const el = document.getElementById('notesList');
+  if(!list.length){
+    el.innerHTML=`<div class="empty">${S.notes.length?'No notes match your search.':'No notes yet.<br>Write your first note above.'}</div>`;
+    return;
+  }
+  el.innerHTML = list.map(n=>{
+    const isExp = expandedNote===n.id;
+    const tags = (n.tags||[]).map(tid=>{
+      const t=getNoteTag(tid);
+      return `<span class="note-tag" style="background:${t.color}1a;color:${t.color};border:1px solid ${t.color}33">${t.label}</span>`;
+    }).join('');
+    const editedBadge = n.edited ? `<span style="font-size:9px;color:var(--txm);margin-left:6px">edited</span>` : '';
+    return `<div class="note-card ${n.pinned?'pinned':''} ${isExp?'expanded':''}" onclick="toggleExpand(${n.id})">
+      <div class="note-hdr">
+        <div class="note-title">${n.title ? escHtml(n.title) : '<span style="color:var(--txm);font-style:italic">Untitled</span>'}</div>
+        <span class="note-pin">📌</span>
+      </div>
+      <div class="note-body ${isExp?'':'collapsed'}">${escHtml(n.body)}</div>
+      <div class="note-footer">
+        <div style="display:flex;gap:5px;flex-wrap:wrap">${tags}</div>
+        <div class="note-date">${n.date}${editedBadge}</div>
+      </div>
+      <div class="note-actions">
+        <button class="btn" style="font-size:8px;padding:5px 10px" onclick="event.stopPropagation();editNote(${n.id})">Edit</button>
+        <button class="btn" style="font-size:8px;padding:5px 10px;color:var(--gold);border-color:rgba(255,200,61,.3)" onclick="event.stopPropagation();pinNote(${n.id})">${n.pinned?'Unpin':'Pin'}</button>
+        <button class="btn rd" style="font-size:8px;padding:5px 10px" onclick="event.stopPropagation();if(confirm('Delete this note?'))deleteNote(${n.id})">Delete</button>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function escHtml(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+
+// ─── GOOGLE DRIVE SYNC ───
+const DRIVE_FILE_NAME = 'the-system-save.json';
+const DRIVE_SCOPE = 'https://www.googleapis.com/auth/drive.appdata';
+let tokenClient = null;
+let accessToken = null;
+let driveFileId = null;
+let syncPending = false;
+
+function getClientId() { return localStorage.getItem('tsSys_clientId') || ''; }
+
+function saveClientId() {
+  const v = document.getElementById('clientIdInput').value.trim();
+  if (!v) { toast('Paste your Client ID first'); return; }
+  localStorage.setItem('tsSys_clientId', v);
+  toast('Client ID saved!');
+  initGoogleAuth();
+  document.getElementById('clientIdInput').value = '';
+}
+
+function initGoogleAuth() {
+  const cid = getClientId();
+  if (!cid || typeof google === 'undefined') return;
+  tokenClient = google.accounts.oauth2.initTokenClient({
+    client_id: cid,
+    scope: DRIVE_SCOPE,
+    callback: async (resp) => {
+      if (resp.error) { setSyncState('err', 'Auth error'); return; }
+      accessToken = resp.access_token;
+      localStorage.setItem('tsSys_driveConnected', '1');
+      await drivePull(false);
+      showDriveSignedIn();
+    }
+  });
+  // Auto-reconnect silently if was previously connected
+  if (localStorage.getItem('tsSys_driveConnected')) {
+    setSyncState('busy', 'Connecting...');
+    tokenClient.requestAccessToken({ prompt: '' });
+  }
+}
+
+function driveSignIn() {
+  if (!getClientId()) { toast('Enter your Client ID first (see setup guide)'); return; }
+  if (!tokenClient) { initGoogleAuth(); }
+  if (!tokenClient) { toast('Google auth not ready yet'); return; }
+  setSyncState('busy', 'Signing in...');
+  tokenClient.requestAccessToken({ prompt: 'consent' });
+}
+
+function driveSignOut() {
+  if (accessToken) google.accounts.oauth2.revoke(accessToken);
+  accessToken = null; driveFileId = null;
+  localStorage.removeItem('tsSys_driveConnected');
+  localStorage.removeItem('tsSys_lastSync');
+  showDriveSignedOut();
+  setSyncState('', 'Sync');
+  toast('Signed out of Google Drive');
+}
+
+function showDriveSignedIn() {
+  document.getElementById('driveSignedOut').style.display = 'none';
+  document.getElementById('driveSignedIn').style.display = '';
+  document.getElementById('setupGuide').style.display = 'none';
+  document.getElementById('driveStatusBox').textContent = '✓ Connected to Google Drive (App Data folder)';
+  const ls = localStorage.getItem('tsSys_lastSync');
+  document.getElementById('lastSyncedTxt').textContent = ls ? 'Last synced: ' + ls : 'Not yet synced this session';
+  setSyncState('ok', 'Synced');
+}
+
+function showDriveSignedOut() {
+  document.getElementById('driveSignedOut').style.display = '';
+  document.getElementById('driveSignedIn').style.display = 'none';
+  document.getElementById('setupGuide').style.display = getClientId() ? 'none' : '';
+  document.getElementById('driveStatusBox').textContent = 'Not connected. Sign in to sync across devices.';
+}
+
+// Find the save file in Drive AppData
+async function findDriveFile() {
+  if (driveFileId) return driveFileId;
+  const r = await fetch(
+    `https://www.googleapis.com/drive/v3/files?spaces=appDataFolder&q=name+%3D+%27${DRIVE_FILE_NAME}%27&fields=files(id,name,modifiedTime)`,
+    { headers: { Authorization: 'Bearer ' + accessToken } }
+  );
+  if (!r.ok) return null;
+  const { files } = await r.json();
+  if (files && files.length > 0) { driveFileId = files[0].id; return driveFileId; }
+  return null;
+}
+
+// Push local state → Drive
+async function drivePush(manual = false) {
+  if (!accessToken) return;
+  setSyncState('busy', 'Saving...');
+  try {
+    const body = JSON.stringify(S);
+    const fileId = await findDriveFile();
+    if (fileId) {
+      // Update existing file
+      await fetch(
+        `https://www.googleapis.com/upload/drive/v3/files/${fileId}?uploadType=media`,
+        { method: 'PATCH', headers: { Authorization: 'Bearer ' + accessToken, 'Content-Type': 'application/json' }, body }
+      );
+    } else {
+      // Create new file in AppData
+      const meta = JSON.stringify({ name: DRIVE_FILE_NAME, parents: ['appDataFolder'] });
+      const form = new FormData();
+      form.append('metadata', new Blob([meta], { type: 'application/json' }));
+      form.append('file', new Blob([body], { type: 'application/json' }));
+      const res = await fetch(
+        'https://www.googleapis.com/upload/drive/v3/files?uploadType=multipart&fields=id',
+        { method: 'POST', headers: { Authorization: 'Bearer ' + accessToken }, body: form }
+      );
+      const { id } = await res.json();
+      driveFileId = id;
+    }
+    const ts = new Date().toLocaleTimeString();
+    localStorage.setItem('tsSys_lastSync', ts);
+    document.getElementById('lastSyncedTxt').textContent = 'Last synced: ' + ts;
+    setSyncState('ok', 'Synced');
+    if (manual) toast('Pushed to Google Drive ✓', 'lv');
+  } catch (e) {
+    setSyncState('err', 'Error');
+    if (manual) toast('Drive push failed. Check connection.');
+  }
+}
+
+// Pull Drive → local state
+async function drivePull(manual = false) {
+  if (!accessToken) return;
+  setSyncState('busy', 'Loading...');
+  try {
+    const fileId = await findDriveFile();
+    if (!fileId) {
+      // No file on Drive yet — push current local state up
+      setSyncState('ok', 'Synced');
+      await drivePush(false);
+      if (manual) toast('No Drive save found. Pushed your local data up.');
+      return;
+    }
+    const r = await fetch(
+      `https://www.googleapis.com/drive/v3/files/${fileId}?alt=media`,
+      { headers: { Authorization: 'Bearer ' + accessToken } }
+    );
+    if (!r.ok) throw new Error('fetch failed');
+    const remote = await r.json();
+    // Merge strategy: take whichever has higher totalVol (more progress)
+    if (!S.totalVol || (remote.totalVol || 0) >= (S.totalVol || 0)) {
+      S = remote;
+      MUSCLES.forEach(m => { if (S.muscleVol[m.id] == null) S.muscleVol[m.id] = 0; });
+      ['weekXp','weekVol','weekPrs','totalVol'].forEach(k => { if (!S[k]) S[k] = 0; });
+      if (!S.achievements) S.achievements = [];
+      if (!S.customExList) S.customExList = [];
+      save();
+      renderHome();
+    }
+    const ts = new Date().toLocaleTimeString();
+    localStorage.setItem('tsSys_lastSync', ts);
+    setSyncState('ok', 'Synced');
+    if (manual) toast('Pulled from Google Drive ✓', 'lv');
+  } catch (e) {
+    setSyncState('err', 'Error');
+    if (manual) toast('Drive pull failed. Check connection.');
+  }
+}
+
+// Throttled auto-push after every save
+let pushTimeout = null;
+function schedulePush() {
+  if (!accessToken) return;
+  clearTimeout(pushTimeout);
+  pushTimeout = setTimeout(() => drivePush(false), 3000); // 3s debounce
+}
+
+function setSyncState(state, label) {
+  const dot = document.getElementById('syncDot');
+  const lbl = document.getElementById('syncLbl');
+  if (dot) { dot.className = 'sync-dot' + (state ? ' ' + state : ''); }
+  if (lbl) lbl.textContent = label;
+}
+
+function openSyncModal() {
+  const cid = getClientId();
+  document.getElementById('setupGuide').style.display = (!cid || !accessToken) ? '' : 'none';
+  if (cid) document.getElementById('clientIdInput').value = '';
+  if (accessToken) showDriveSignedIn(); else showDriveSignedOut();
+  document.getElementById('syncModal').classList.add('show');
+}
+
+// ─── JSON BACKUP ───
+function exportJSON() {
+  const blob = new Blob([JSON.stringify(S, null, 2)], { type: 'application/json' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = `the-system-backup-${todayKey()}.json`;
+  a.click();
+  toast('Backup exported ✓');
+}
+
+function importJSON(event) {
+  const file = event.target.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const data = JSON.parse(e.target.result);
+      if (!data.name || !data.level) { toast('Invalid backup file'); return; }
+      S = data;
+      MUSCLES.forEach(m => { if (S.muscleVol[m.id] == null) S.muscleVol[m.id] = 0; });
+      if (!S.achievements) S.achievements = [];
+      if (!S.customExList) S.customExList = [];
+      save();
+      renderHome();
+      toast('Backup imported ✓', 'lv');
+      closeModal('syncModal');
+    } catch (err) { toast('Could not read file'); }
+  };
+  reader.readAsText(file);
+  event.target.value = '';
+}
+
+// ─── OVERRIDE SAVE TO ALSO PUSH ───
+const _origSave = save;
+function save() {
+  localStorage.setItem('tsSys3', JSON.stringify(S));
+  schedulePush();
+}
+
+// INIT
+const mfEl=document.getElementById('exMF');
+const cexMEl=document.getElementById('cexMuscle');
+MUSCLES.forEach(m=>{
+  const o=document.createElement('option');o.value=m.id;o.textContent=m.n;mfEl.appendChild(o);
+  const o2=document.createElement('option');o2.value=m.id;o2.textContent=m.n;cexMEl.appendChild(o2);
+});
+// Init Google auth after GIS script loads
+window.addEventListener('load', () => {
+  setTimeout(initGoogleAuth, 800);
+});
+renderHome();
+initNoteCompose();
+</script>
+</body>
+</html>
